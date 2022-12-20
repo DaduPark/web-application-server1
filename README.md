@@ -15,7 +15,9 @@
 * 각 요구사항을 구현하는 것이 중요한 것이 아니라 구현 과정을 통해 학습한 내용을 인식하는 것이 배움에 중요하다. 
 
 ### 요구사항 1 - http://localhost:8080/index.html로 접속시 응답
-* 
+* 헤더 가장 첫째 줄에 get,post 정보와 mappingUrl정보가 있다.
+* InputStream을 읽기 위해 BufferedReader을 사용 /readLine() 함수를 사용하여 한줄씩 읽어옴
+* Files.newBufferedReader를 사용하여 파일을 읽어올 수 있음
 
 ### 요구사항 2 - get 방식으로 회원가입
 * 
