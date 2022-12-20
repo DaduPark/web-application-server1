@@ -80,16 +80,12 @@ public class RequestHandler extends Thread {
     
     private byte[] getMappingBody(String mappingUrl) {
     	byte[] body = null;
-    	if(mappingUrl.equals("/index.html")) {
-    		try {
-				body = Files.readAllBytes(new File("./webapp" + mappingUrl).toPath());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	}else {
-    		body = "Hello SAN".getBytes();
-    	}
+    	try {
+			body = Files.readAllBytes(new File("./webapp" + mappingUrl).toPath());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     	
     	return body;
     }
