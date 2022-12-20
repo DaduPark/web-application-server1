@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.Socket;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import org.slf4j.Logger;
@@ -30,24 +27,12 @@ public class RequestHandler extends Thread {
                 connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-        	
-        	InputStreamReader isr = new InputStreamReader(in);
-        	BufferedReader br = new BufferedReader(isr);
-
-        	String firstLine = br.readLine();
-        	
-        	String findUrl = firstLine.split(" ")[1];
-
-        	byte[] body ;
-        	if(findUrl.equals("/index.html")) {
-        		body = Files.readAllBytes(new File("./webapp" + findUrl).toPath());
-        	}else {
-        		body = "Hello SAN".getBytes();
-        	}
+ 
+        	String mappingUrl = getMappingUrl(getHeaderFirstLine(in));
+        	byte[] body = getMappingBody(mappingUrl);
         	
         	// TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
             DataOutputStream dos = new DataOutputStream(out);
-            
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
@@ -74,4 +59,39 @@ public class RequestHandler extends Thread {
             log.error(e.getMessage());
         }
     }
+    
+    private String getHeaderFirstLine(InputStream in) {
+    	InputStreamReader isr = new InputStreamReader(in);
+    	BufferedReader br = new BufferedReader(isr);
+
+    	String firstLine="";
+		try {
+			firstLine = br.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	
+    	return firstLine;
+    }
+    
+    private String getMappingUrl(String headerFirstLine) {
+    	return headerFirstLine.split(" ")[1];
+    }
+    
+    private byte[] getMappingBody(String mappingUrl) {
+    	byte[] body = null;
+    	if(mappingUrl.equals("/index.html")) {
+    		try {
+				body = Files.readAllBytes(new File("./webapp" + mappingUrl).toPath());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}else {
+    		body = "Hello SAN".getBytes();
+    	}
+    	
+    	return body;
+    }
+    
 }
