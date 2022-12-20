@@ -29,7 +29,7 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
         	String mappingUrl = getMappingUrl(getHeaderFirstLine(in));
-        	byte[] body = getMappingBody(getFile(mappingUrl));
+        	byte[] body = getMappingBody(getMappgingFile(mappingUrl));
         	
         	// TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
     		DataOutputStream dos = new DataOutputStream(out);
@@ -91,7 +91,7 @@ public class RequestHandler extends Thread {
     	return body;
     }
     
-    private File getFile(String mappingUrl) {
+    private File getMappgingFile(String mappingUrl) {
     	File file = new File("./webapp" + mappingUrl);
     	
         if (file.exists()) {
