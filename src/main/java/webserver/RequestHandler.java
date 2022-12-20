@@ -29,10 +29,10 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
         	String mappingUrl = getMappingUrl(getHeaderFirstLine(in));
-        	byte[] body = getMappingBody(mappingUrl);
+        	byte[] body = getMappingBody(getFile(mappingUrl));
         	
         	// TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
-            DataOutputStream dos = new DataOutputStream(out);
+    		DataOutputStream dos = new DataOutputStream(out);
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
@@ -78,16 +78,28 @@ public class RequestHandler extends Thread {
     	return headerFirstLine.split(" ")[1];
     }
     
-    private byte[] getMappingBody(String mappingUrl) {
+    private byte[] getMappingBody(File file) {
     	byte[] body = null;
+    	
     	try {
-			body = Files.readAllBytes(new File("./webapp" + mappingUrl).toPath());
+    		body = Files.readAllBytes(file.toPath());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     	
     	return body;
+    }
+    
+    private File getFile(String mappingUrl) {
+    	File file = new File("./webapp" + mappingUrl);
+    	
+        if (file.exists()) {
+            if (!file.isDirectory()) {
+            	return file;
+            }
+        }
+        return new File("./webapp/index.html");
     }
     
 }
