@@ -99,6 +99,8 @@ public class RequestHandler extends Thread {
             	return file;
             }
         }
+        
+        log.debug("No Mapping Url[URL : "+mappingUrl+"]");
         return new File("./webapp/index.html");
     }
     
