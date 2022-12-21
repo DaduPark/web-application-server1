@@ -31,8 +31,17 @@ public class RequestHandler extends Thread {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
-        	String mappingUrl = getMappingUrl(getHeaderFirstLine(in));
-                    
+        	String headerInfo = getHeaderInfo(in);
+        	
+        	String headerFirstInfo = getHeaderFirstLine(headerInfo);
+        	
+        	String httpMethod = getHeaderMethod(headerFirstInfo);
+        	
+        	
+        	String mappingUrl = getMappingUrl(headerFirstInfo);
+            
+        	
+        	
         	if(mappingUrl.contains("/create")) {
         		int splitIndex = mappingUrl.indexOf("?");
         		String userInfoArray[] = mappingUrl.substring(splitIndex).split("&");
@@ -99,18 +108,37 @@ public class RequestHandler extends Thread {
         }
     }
     
-    private String getHeaderFirstLine(InputStream in) {
+    private String getHeaderInfo(InputStream in) {
     	InputStreamReader isr = new InputStreamReader(in);
     	BufferedReader br = new BufferedReader(isr);
 
-    	String firstLine="";
+    	StringBuffer headerInfo= new StringBuffer();
 		try {
-			firstLine = br.readLine();
+			String line = br.readLine();
+			while (!"".equals(line)) {
+				headerInfo.append(line+"\n");
+				line = br.readLine();
+				
+				if(line == null) {
+					return headerInfo.toString();
+				}
+				
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
     	
+    	return headerInfo.toString();
+    }
+    
+    private String getHeaderFirstLine(String headerInfo) {
+    	String firstLine = headerInfo.split("\n")[0];
+    	
     	return firstLine;
+    }
+    
+    private String getHeaderMethod(String headerFirstLine) {
+    	return headerFirstLine.split(" ")[0];
     }
     
     private String getMappingUrl(String headerFirstLine) {
