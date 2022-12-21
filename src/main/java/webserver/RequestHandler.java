@@ -101,7 +101,7 @@ public class RequestHandler extends Thread {
         }
         
         log.debug("No Mapping Url[URL : "+mappingUrl+"]");
-        return new File("./webapp/index.html"); 
+        return new File("./webapp/index.html");  
     }
     
 }
