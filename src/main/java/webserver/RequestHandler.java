@@ -10,11 +10,14 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import model.User;
+import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -31,20 +34,27 @@ public class RequestHandler extends Thread {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
-        	String headerInfo = getHeaderInfo(in);
+        	InputStreamReader isr = new InputStreamReader(in);
+        	BufferedReader br = new BufferedReader(isr);
+        	
+        	String headerInfo = getHttpInfo(br);
         	
         	String headerFirstInfo = getHeaderFirstLine(headerInfo);
         	
         	String httpMethod = getHeaderMethod(headerFirstInfo);
         	
-        	
         	String mappingUrl = getMappingUrl(headerFirstInfo);
             
+        	Map<String, String> headerInfoMap = getHeaderInfoMap(headerInfo);
         	
+        	String bodyInfo = "";
+        	
+        	if("POST".equals(httpMethod)) {
+        		bodyInfo = getBodyInfo(br, headerInfoMap.get("Content-Length"));
+        	}
         	
         	if(mappingUrl.contains("/create")) {
-        		int splitIndex = mappingUrl.indexOf("?");
-        		String userInfoArray[] = mappingUrl.substring(splitIndex).split("&");
+        		String userInfoArray[] = bodyInfo.split("&");
         		
         		String userId ="";
                 String password ="";
@@ -108,19 +118,19 @@ public class RequestHandler extends Thread {
         }
     }
     
-    private String getHeaderInfo(InputStream in) {
-    	InputStreamReader isr = new InputStreamReader(in);
-    	BufferedReader br = new BufferedReader(isr);
+    private String getHttpInfo(BufferedReader br) {
+    	
 
     	StringBuffer headerInfo= new StringBuffer();
 		try {
 			String line = br.readLine();
+			
 			while (!"".equals(line)) {
 				headerInfo.append(line+"\n");
 				line = br.readLine();
 				
 				if(line == null) {
-					return headerInfo.toString();
+					break;
 				}
 				
 			}
@@ -171,4 +181,33 @@ public class RequestHandler extends Thread {
         return new File("./webapp/index.html");  
     }
     
+    
+    private Map<String,String> getHeaderInfoMap(String headerInfo){
+    	Map<String, String> headerInfoMap = new HashMap<String, String>();
+    	
+    	String infoLineArray[] = headerInfo.split("\n");
+    	
+    	//httpmethod정보와 url정보가 있는 첫번째 줄은 무
+    	for(int i = 1 ; i<infoLineArray.length ; i++) {
+			String oneHeaderInfo[] = infoLineArray[i].split(": ");
+			
+			if(oneHeaderInfo.length==2) {
+				headerInfoMap.put(oneHeaderInfo[0],oneHeaderInfo[1]);
+			}
+    	}
+    	
+    	return headerInfoMap;
+    }
+    private String getBodyInfo(BufferedReader br, String contentLength) {
+    	
+    	String requestBody="";
+    	try {
+			requestBody=IOUtils.readData(br,Integer.parseInt(contentLength));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	return requestBody;
+    	
+    	
+    }
 }
