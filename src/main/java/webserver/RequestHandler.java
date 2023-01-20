@@ -11,7 +11,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import db.DataBase;
 import model.User;
+import util.HttpRequestUtils;
 import util.IOUtils;
 
 public class RequestHandler extends Thread {
@@ -54,6 +57,8 @@ public class RequestHandler extends Thread {
         	String bodyInfo = "";
         	
         	
+        	DataOutputStream dos = new DataOutputStream(out);
+        	
         	if("POST".equals(httpMethod)) {
         		bodyInfo = getBodyInfo(br, headerInfoMap.get("Content-Length"));
         	}
@@ -66,7 +71,7 @@ public class RequestHandler extends Thread {
         		
         		System.out.println(user.toString());
         		
-        		DataOutputStream dos = new DataOutputStream(out);
+        		
                 response302Header(dos,homeURL);
         	}else if(mappingUrl.endsWith("/user/login")){
         		String userInfoArray[] = bodyInfo.split("&");
@@ -101,7 +106,6 @@ public class RequestHandler extends Thread {
                     
             		byte[] body = getMappingBody(file);
                 	
-            		DataOutputStream dos = new DataOutputStream(out);
                     response200HeaderWithCookie(dos, body.length, "logined=true");
                     responseBody(dos, body);
         		}else {
@@ -109,16 +113,29 @@ public class RequestHandler extends Thread {
                     
             		byte[] body = getMappingBody(file);
                 	
-            		DataOutputStream dos = new DataOutputStream(out);
                     response200HeaderWithCookie(dos, body.length, "logined=false");
                     responseBody(dos, body);
+        		}
+        	}else if(mappingUrl.contains("/user/list")) {
+        		
+        		Map<String, String> cookies = HttpRequestUtils.parseCookies(headerInfoMap.get("Cookie"));
+        		
+        		if(cookies.get("logined") != null && Boolean.parseBoolean(cookies.get("logined"))==true) {
+        			
+        			
+        			
+        			
+            		byte[] body = getUserListHttpBody();
+                    response200Header(dos, body.length);
+                    responseBody(dos, body);
+        		}else {
+        			response302Header(dos,"/user/login.html");
         		}
         	}else {
         		File file = new File("./webapp" + mappingUrl);
                 
         		byte[] body = getMappingBody(file);
             	
-        		DataOutputStream dos = new DataOutputStream(out);
                 response200Header(dos, body.length);
                 responseBody(dos, body);
         	}
@@ -299,4 +316,38 @@ public class RequestHandler extends Thread {
 		}
     	return new User(userId, password, name, email);
     }
+    
+    private byte[] getUserListHttpBody() {
+    	Collection<User> userList = DataBase.findAll();
+		
+    	StringBuilder httpBody = new StringBuilder();
+    	httpBody.append("<table class=\"table table-hover\">\n"
+    			+ "        <thead>\n"
+    			+ "          <tr>\n"
+    			+ "              <th>#</th> <th>사용자 아이디</th> <th>이름</th> <th>이메일</th><th></th>\n"
+    			+ "          </tr>\n"
+    			+ "        </thead>\n"
+    			+ "        <tbody>");
+    	
+    	int n = 1;
+    	for(User user : userList) {
+    		
+    		httpBody.append("<tr>");
+    		
+    		httpBody.append(" <th scope=\"row\">"+ n++ +"</th> <td>");
+    		httpBody.append(user.getUserId());
+    		httpBody.append("</td> <td>");
+    		httpBody.append(user.getName());
+    		httpBody.append("</td> <td>");
+    		httpBody.append(user.getEmail());
+    		httpBody.append("</td><td><a href=\"#\" class=\"btn btn-success\" role=\"button\">수정</a></td>");
+    		
+    		httpBody.append("</tr>");
+    	}
+    	
+    	httpBody.append("</tbody>");
+		
+    	return httpBody.toString().getBytes();
+    }
+    
 }
