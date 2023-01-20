@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.file.Files;
@@ -23,6 +24,8 @@ public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
 
     private Socket connection;
+    
+    public static String homeURL = "/index.html";
 
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
@@ -54,36 +57,15 @@ public class RequestHandler extends Thread {
         	}
         	
         	if(mappingUrl.contains("/create")) {
-        		String userInfoArray[] = bodyInfo.split("&");
         		
-        		String userId ="";
-                String password ="";
-                String name ="";
-                String email ="";
-                
-        		for(String userInfo : userInfoArray) {
-        			String userInfoMap[] = userInfo.split("=");
-        			
-        			userInfoMap[1] = URLDecoder.decode(userInfoMap[1], "UTF-8");
-        			if("userId".contains(userInfoMap[0])) {
-        				userId = userInfoMap[1];
-        			}
-        			
-        			if("password".contains(userInfoMap[0])) {
-        				password = userInfoMap[1];
-        			}
-        			
-        			if("name".contains(userInfoMap[0])) {
-        				name = userInfoMap[1];
-        			}
-        			
-        			if("email".contains(userInfoMap[0])) {
-        				email = userInfoMap[1];
-        			}
-        		}
-        		User user = new User(userId, password, name, email);
+        		User user = setBodyInfoToUser(bodyInfo);
         		
         		System.out.println(user.toString());
+        		
+            	
+            	// TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
+        		DataOutputStream dos = new DataOutputStream(out);
+                response302Header(dos);
         	}else {
         		byte[] body = getMappingBody(getMappgingFile(mappingUrl));
             	
@@ -103,6 +85,16 @@ public class RequestHandler extends Thread {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
             dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+    
+    private void response302Header(DataOutputStream dos) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found \r\n");
+            dos.writeBytes("Location: "+homeURL);
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -178,7 +170,7 @@ public class RequestHandler extends Thread {
         }
         
         log.debug("No Mapping Url[URL : "+mappingUrl+"]");
-        return new File("./webapp/index.html");  
+        return new File("./webapp"+homeURL);  
     }
     
     
@@ -209,5 +201,41 @@ public class RequestHandler extends Thread {
     	return requestBody;
     	
     	
+    }
+    
+    private User setBodyInfoToUser(String bodyInfo){
+    	
+    	String userInfoArray[] = bodyInfo.split("&");
+		
+		String userId ="";
+        String password ="";
+        String name ="";
+        String email ="";
+        
+		for(String userInfo : userInfoArray) {
+			String userInfoMap[] = userInfo.split("=");
+			
+			try {
+				userInfoMap[1] = URLDecoder.decode(userInfoMap[1], "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+			if("userId".contains(userInfoMap[0])) {
+				userId = userInfoMap[1];
+			}
+			
+			if("password".contains(userInfoMap[0])) {
+				password = userInfoMap[1];
+			}
+			
+			if("name".contains(userInfoMap[0])) {
+				name = userInfoMap[1];
+			}
+			
+			if("email".contains(userInfoMap[0])) {
+				email = userInfoMap[1];
+			}
+		}
+    	return new User(userId, password, name, email);
     }
 }
