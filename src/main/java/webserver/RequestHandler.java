@@ -17,6 +17,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import db.DataBase;
 import model.User;
 import util.IOUtils;
 
@@ -52,6 +53,7 @@ public class RequestHandler extends Thread {
         	
         	String bodyInfo = "";
         	
+        	
         	if("POST".equals(httpMethod)) {
         		bodyInfo = getBodyInfo(br, headerInfoMap.get("Content-Length"));
         	}
@@ -60,16 +62,62 @@ public class RequestHandler extends Thread {
         		
         		User user = setBodyInfoToUser(bodyInfo);
         		
+        		DataBase.addUser(user);
+        		
         		System.out.println(user.toString());
         		
-            	
-            	// TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
         		DataOutputStream dos = new DataOutputStream(out);
-                response302Header(dos);
+                response302Header(dos,homeURL);
+        	}else if(mappingUrl.endsWith("/user/login")){
+        		String userInfoArray[] = bodyInfo.split("&");
+        		
+        		String loginUserId ="";
+                String loginPassword ="";
+                
+        		for(String userInfo : userInfoArray) {
+        			String userInfoMap[] = userInfo.split("=");
+        			
+        			try {
+        				userInfoMap[1] = URLDecoder.decode(userInfoMap[1], "UTF-8");
+        			} catch (UnsupportedEncodingException e) {
+        				e.printStackTrace();
+        			}
+        			
+
+        			if("userId".contains(userInfoMap[0])) {
+        				loginUserId = userInfoMap[1];
+        			}
+        			
+        			if("password".contains(userInfoMap[0])) {
+        				loginPassword = userInfoMap[1];
+        			}
+        		}
+        		
+        		User user = DataBase.findUserById(loginUserId);
+        		
+        		if(user != null && user.getUserId().equals(loginUserId) && user.getPassword().equals(loginPassword)) {
+        			
+        			File file = new File("./webapp" + homeURL);
+                    
+            		byte[] body = getMappingBody(file);
+                	
+            		DataOutputStream dos = new DataOutputStream(out);
+                    response200HeaderWithCookie(dos, body.length, "logined=true");
+                    responseBody(dos, body);
+        		}else {
+        			File file = new File("./webapp/user/login_failed.html");
+                    
+            		byte[] body = getMappingBody(file);
+                	
+            		DataOutputStream dos = new DataOutputStream(out);
+                    response200HeaderWithCookie(dos, body.length, "logined=false");
+                    responseBody(dos, body);
+        		}
         	}else {
-        		byte[] body = getMappingBody(getMappgingFile(mappingUrl));
+        		File file = new File("./webapp" + mappingUrl);
+                
+        		byte[] body = getMappingBody(file);
             	
-            	// TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
         		DataOutputStream dos = new DataOutputStream(out);
                 response200Header(dos, body.length);
                 responseBody(dos, body);
@@ -91,10 +139,22 @@ public class RequestHandler extends Thread {
         }
     }
     
-    private void response302Header(DataOutputStream dos) {
+    private void response200HeaderWithCookie(DataOutputStream dos, int lengthOfBodyContent, String cookie) {
+        try {
+            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes("Set-Cookie: "+cookie);
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+    
+    private void response302Header(DataOutputStream dos, String locationUrl) {
         try {
             dos.writeBytes("HTTP/1.1 302 Found \r\n");
-            dos.writeBytes("Location: "+homeURL);
+            dos.writeBytes("Location: "+locationUrl);
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -160,19 +220,19 @@ public class RequestHandler extends Thread {
     	return body;
     }
     
-    private File getMappgingFile(String mappingUrl) {
-    	File file = new File("./webapp" + mappingUrl);
-    	
-        if (file.exists()) {
-            if (!file.isDirectory()) {
-            	return file;
-            }
-        }
-        
-        log.debug("No Mapping Url[URL : "+mappingUrl+"]");
-        return new File("./webapp"+homeURL);  
-    }
-    
+//    private File getMappgingFile(String mappingUrl) {
+//    	File file = new File("./webapp" + mappingUrl);
+//    	
+//        if (file.exists()) {
+//            if (!file.isDirectory()) {
+//            	return file;
+//            }
+//        }
+//        
+//        log.debug("No Mapping Url[URL : "+mappingUrl+"]");
+//        return new File("./webapp"+homeURL);  
+//    }
+//    
     
     private Map<String,String> getHeaderInfoMap(String headerInfo){
     	Map<String, String> headerInfoMap = new HashMap<String, String>();
@@ -220,6 +280,7 @@ public class RequestHandler extends Thread {
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
+			
 			if("userId".contains(userInfoMap[0])) {
 				userId = userInfoMap[1];
 			}
