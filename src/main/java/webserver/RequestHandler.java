@@ -82,7 +82,7 @@ public class RequestHandler extends Thread {
                 
         		User user = DataBase.findUserById(loginUserId);
         		
-        		if(user != null && user.getUserId().equals(loginUserId) && user.getPassword().equals(loginPassword)) {
+        		if(user != null && user.getPassword().equals(loginPassword)) {
                     response302Header(dos, homeURL, "logined=true");
         		}else {
             		response302Header(dos, "/user/login_failed.html", "logined=false");
@@ -92,12 +92,8 @@ public class RequestHandler extends Thread {
         		Map<String, String> cookies = HttpRequestUtils.parseCookies(headerInfoMap.get("Cookie"));
         		
         		if(cookies.get("logined") != null && Boolean.parseBoolean(cookies.get("logined"))==true) {
-        			
-        			
-        			
-        			
             		byte[] body = getUserListHttpBody();
-                    response200Header(dos, body.length, headerInfoMap.get("Accept").split(",")[0], null);
+                    response200Header(dos, body.length, headerInfoMap.get("Accept").split(",")[0]);
                     responseBody(dos, body);
         		}else {
         			response302Header(dos,"/user/login.html",null);
@@ -107,7 +103,7 @@ public class RequestHandler extends Thread {
                 
         		byte[] body = getMappingBody(file);
             	
-                response200Header(dos, body.length, headerInfoMap.get("Accept").split(",")[0], null);
+                response200Header(dos, body.length, headerInfoMap.get("Accept").split(",")[0]);
                 responseBody(dos, body);
         	}
         	
@@ -116,14 +112,11 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType, String cookie) {
+    private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
             dos.writeBytes("Content-Type: "+contentType+";charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            if(cookie != null) {
-            	dos.writeBytes("Set-Cookie: "+cookie);
-            }
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -244,12 +237,6 @@ public class RequestHandler extends Thread {
     	return requestBody;
     	
     	
-    }
-    
-    private User setBodyInfoToUser(String bodyInfo){
-    	
-    	Map<String, String> params = HttpRequestUtils.parseQueryString(bodyInfo);
-    	return new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
     }
     
     private byte[] getUserListHttpBody() {
