@@ -67,36 +67,19 @@ public class RequestHandler extends Thread {
         	
         	if(mappingUrl.contains("/create")) {
         		
-        		User user = setBodyInfoToUser(bodyInfo);
-        		
+        		Map<String, String> params = HttpRequestUtils.parseQueryString(bodyInfo);
+        		User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
+            	
         		DataBase.addUser(user);
         		
                 response302Header(dos,homeURL, null);
         	}else if(mappingUrl.endsWith("/user/login")){
-        		String userInfoArray[] = bodyInfo.split("&");
         		
-        		String loginUserId ="";
-                String loginPassword ="";
+        		Map<String, String> params = HttpRequestUtils.parseQueryString(bodyInfo);
+        		
+        		String loginUserId =params.get("userId");
+                String loginPassword =params.get("password");
                 
-        		for(String userInfo : userInfoArray) {
-        			String userInfoMap[] = userInfo.split("=");
-        			
-        			try {
-        				userInfoMap[1] = URLDecoder.decode(userInfoMap[1], "UTF-8");
-        			} catch (UnsupportedEncodingException e) {
-        				e.printStackTrace();
-        			}
-        			
-
-        			if("userId".contains(userInfoMap[0])) {
-        				loginUserId = userInfoMap[1];
-        			}
-        			
-        			if("password".contains(userInfoMap[0])) {
-        				loginPassword = userInfoMap[1];
-        			}
-        		}
-        		
         		User user = DataBase.findUserById(loginUserId);
         		
         		if(user != null && user.getUserId().equals(loginUserId) && user.getPassword().equals(loginPassword)) {
@@ -265,39 +248,8 @@ public class RequestHandler extends Thread {
     
     private User setBodyInfoToUser(String bodyInfo){
     	
-    	String userInfoArray[] = bodyInfo.split("&");
-		
-		String userId ="";
-        String password ="";
-        String name ="";
-        String email ="";
-        
-		for(String userInfo : userInfoArray) {
-			String userInfoMap[] = userInfo.split("=");
-			
-			try {
-				userInfoMap[1] = URLDecoder.decode(userInfoMap[1], "UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
-			
-			if("userId".contains(userInfoMap[0])) {
-				userId = userInfoMap[1];
-			}
-			
-			if("password".contains(userInfoMap[0])) {
-				password = userInfoMap[1];
-			}
-			
-			if("name".contains(userInfoMap[0])) {
-				name = userInfoMap[1];
-			}
-			
-			if("email".contains(userInfoMap[0])) {
-				email = userInfoMap[1];
-			}
-		}
-    	return new User(userId, password, name, email);
+    	Map<String, String> params = HttpRequestUtils.parseQueryString(bodyInfo);
+    	return new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
     }
     
     private byte[] getUserListHttpBody() {
