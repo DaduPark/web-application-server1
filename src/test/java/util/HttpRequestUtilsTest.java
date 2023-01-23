@@ -1,13 +1,19 @@
 package util;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Map;
 
 import org.junit.Test;
 
 import util.HttpRequestUtils.Pair;
+import webserver.HttpRequest;
 
 public class HttpRequestUtilsTest {
     @Test
@@ -69,5 +75,19 @@ public class HttpRequestUtilsTest {
         String header = "Content-Length: 59";
         Pair pair = HttpRequestUtils.parseHeader(header);
         assertThat(pair, is(new Pair("Content-Length", "59")));
+    }
+    
+    private String testDirectory = "./src/test/resources/";
+    
+    @Test
+    public void request_GET() throws Exception {
+        InputStream in = new FileInputStream(new File(testDirectory+"Http_GET.txt"));
+        
+        HttpRequest request = new HttpRequest(in);
+        
+        assertEquals("GET", request.getMethod());
+        assertEquals("/user/create", request.getPath() );
+        assertEquals("keep-alive", request.getHeader("Connection"));
+        assertEquals("javajig", request.getParameter("userId"));
     }
 }

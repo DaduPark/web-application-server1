@@ -1,19 +1,13 @@
 package webserver;
 
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -22,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import db.DataBase;
 import model.User;
 import util.HttpRequestUtils;
-import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -41,44 +34,21 @@ public class RequestHandler extends Thread {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
-        	InputStreamReader isr = new InputStreamReader(in);
-        	BufferedReader br = new BufferedReader(isr);
-        	
-        	String headerInfo = getHttpInfo(br);
-        	
-        	String headerFirstInfo = getHeaderFirstLine(headerInfo);
-        	
-        	String httpMethod = getHeaderMethod(headerFirstInfo);
-        	
-        	String mappingUrl = getMappingUrl(headerFirstInfo);
-            
-        	Map<String, String> headerInfoMap = getHeaderInfoMap(headerInfo);
-        	
-        	String bodyInfo = "";
-        	
+        	HttpRequest httpRequest = new HttpRequest(in);
         	
         	DataOutputStream dos = new DataOutputStream(out);
         	
-        	log.debug(mappingUrl);
-        	
-        	if("POST".equals(httpMethod)) {
-        		bodyInfo = getBodyInfo(br, headerInfoMap.get("Content-Length"));
-        	}
-        	
-        	if(mappingUrl.contains("/create")) {
+        	if(httpRequest.getPath().contains("/create")) {
         		
-        		Map<String, String> params = HttpRequestUtils.parseQueryString(bodyInfo);
-        		User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
+        		User user = new User(httpRequest.getParameter("userId"), httpRequest.getParameter("password"), httpRequest.getParameter("name"), httpRequest.getParameter("email"));
             	
         		DataBase.addUser(user);
         		
                 response302Header(dos,homeURL, null);
-        	}else if(mappingUrl.endsWith("/user/login")){
+        	}else if(httpRequest.getPath().endsWith("/user/login")){
         		
-        		Map<String, String> params = HttpRequestUtils.parseQueryString(bodyInfo);
-        		
-        		String loginUserId =params.get("userId");
-                String loginPassword =params.get("password");
+        		String loginUserId =httpRequest.getParameter("userId");
+                String loginPassword =httpRequest.getParameter("password");
                 
         		User user = DataBase.findUserById(loginUserId);
         		
@@ -87,23 +57,23 @@ public class RequestHandler extends Thread {
         		}else {
             		response302Header(dos, "/user/login_failed.html", "logined=false");
         		}
-        	}else if(mappingUrl.contains("/user/list")) {
+        	}else if(httpRequest.getPath().contains("/user/list")) {
         		
-        		Map<String, String> cookies = HttpRequestUtils.parseCookies(headerInfoMap.get("Cookie"));
+        		Map<String, String> cookies = HttpRequestUtils.parseCookies(httpRequest.getHeader("Cookie"));
         		
         		if(cookies.get("logined") != null && Boolean.parseBoolean(cookies.get("logined"))==true) {
             		byte[] body = getUserListHttpBody();
-                    response200Header(dos, body.length, headerInfoMap.get("Accept").split(",")[0]);
+                    response200Header(dos, body.length, httpRequest.getHeader("Accept").split(",")[0]);
                     responseBody(dos, body);
         		}else {
         			response302Header(dos,"/user/login.html",null);
         		}
         	}else {
-        		File file = new File("./webapp" + mappingUrl);
+        		File file = new File("./webapp" + httpRequest.getPath());
                 
-        		byte[] body = getMappingBody(file);
+        		byte[] body = Files.readAllBytes(file.toPath());
             	
-                response200Header(dos, body.length, headerInfoMap.get("Accept").split(",")[0]);
+                response200Header(dos, body.length, httpRequest.getHeader("Accept").split(",")[0]);
                 responseBody(dos, body);
         	}
         	
@@ -146,98 +116,7 @@ public class RequestHandler extends Thread {
         }
     }
     
-    private String getHttpInfo(BufferedReader br) {
-    	
 
-    	StringBuffer headerInfo= new StringBuffer();
-		try {
-			String line = br.readLine();
-			
-			while (!"".equals(line)) {
-				headerInfo.append(line+"\n");
-				line = br.readLine();
-				
-				if(line == null) {
-					break;
-				}
-				
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-    	
-    	return headerInfo.toString();
-    }
-    
-    private String getHeaderFirstLine(String headerInfo) {
-    	String firstLine = headerInfo.split("\n")[0];
-    	
-    	return firstLine;
-    }
-    
-    private String getHeaderMethod(String headerFirstLine) {
-    	return headerFirstLine.split(" ")[0];
-    }
-    
-    private String getMappingUrl(String headerFirstLine) {
-    	return headerFirstLine.split(" ")[1];
-    }
-    
-    private byte[] getMappingBody(File file) {
-    	byte[] body = null;
-    	
-    	try {
-    		body = Files.readAllBytes(file.toPath());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	
-    	return body;
-    }
-    
-//    private File getMappgingFile(String mappingUrl) {
-//    	File file = new File("./webapp" + mappingUrl);
-//    	
-//        if (file.exists()) {
-//            if (!file.isDirectory()) {
-//            	return file;
-//            }
-//        }
-//        
-//        log.debug("No Mapping Url[URL : "+mappingUrl+"]");
-//        return new File("./webapp"+homeURL);  
-//    }
-//    
-    
-    private Map<String,String> getHeaderInfoMap(String headerInfo){
-    	Map<String, String> headerInfoMap = new HashMap<String, String>();
-    	
-    	String infoLineArray[] = headerInfo.split("\n");
-    	
-    	//httpmethod정보와 url정보가 있는 첫번째 줄은 무
-    	for(int i = 1 ; i<infoLineArray.length ; i++) {
-			String oneHeaderInfo[] = infoLineArray[i].split(": ");
-			
-			if(oneHeaderInfo.length==2) {
-				headerInfoMap.put(oneHeaderInfo[0],oneHeaderInfo[1]);
-			}
-    	}
-    	
-    	return headerInfoMap;
-    }
-    private String getBodyInfo(BufferedReader br, String contentLength) {
-    	
-    	String requestBody="";
-    	try {
-			requestBody=IOUtils.readData(br,Integer.parseInt(contentLength));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-    	return requestBody;
-    	
-    	
-    }
     
     private byte[] getUserListHttpBody() {
     	Collection<User> userList = DataBase.findAll();
