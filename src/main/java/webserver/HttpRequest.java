@@ -7,11 +7,14 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import util.HttpRequestUtils;
 import util.IOUtils;
 
 public class HttpRequest {
-	
+	 private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
 	private String method;
 	
 	private String path;

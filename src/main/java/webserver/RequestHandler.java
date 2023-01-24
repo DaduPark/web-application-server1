@@ -46,16 +46,18 @@ public class RequestHandler extends Thread {
         		
                 response302Header(dos,homeURL, null);
         	}else if(httpRequest.getPath().endsWith("/user/login")){
-        		
-        		String loginUserId =httpRequest.getParameter("userId");
-                String loginPassword =httpRequest.getParameter("password");
                 
-        		User user = DataBase.findUserById(loginUserId);
+        		User user = DataBase.findUserById(httpRequest.getParameter("userId"));
         		
-        		if(user != null && user.getPassword().equals(loginPassword)) {
+        		if(user != null && user.getPassword().equals(httpRequest.getParameter("password"))) {
                     response302Header(dos, homeURL, "logined=true");
         		}else {
-            		response302Header(dos, "/user/login_failed.html", "logined=false");
+        			
+        		     byte[] body = Files.readAllBytes(new File("./webapp" + "/user/login_failed.html").toPath());
+        			 response200Header(dos, body.length, httpRequest.getHeader("Accept").split(",")[0]);
+        			 responseBody(dos, body);
+        			 
+        			 responseResource(dos, "/user/login_failed.html", httpRequest.getHeader("Accept").split(",")[0]);
         		}
         	}else if(httpRequest.getPath().contains("/user/list")) {
         		
@@ -66,7 +68,7 @@ public class RequestHandler extends Thread {
                     response200Header(dos, body.length, httpRequest.getHeader("Accept").split(",")[0]);
                     responseBody(dos, body);
         		}else {
-        			response302Header(dos,"/user/login.html",null);
+        			responseResource(dos, "/user/login.html", httpRequest.getHeader("Accept").split(",")[0]);
         		}
         	}else {
         		File file = new File("./webapp" + httpRequest.getPath());
@@ -93,9 +95,15 @@ public class RequestHandler extends Thread {
         }
     }
     
+    private void responseResource(DataOutputStream dos, String url, String contentType) throws IOException {
+        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+        response200Header(dos, body.length, contentType);
+        responseBody(dos, body);
+    }
+    
     private void response302Header(DataOutputStream dos, String locationUrl, String cookie) {
         try {
-            dos.writeBytes("HTTP/1.1 302 Found \r\n");
+            dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
             if(cookie != null) {
             	dos.writeBytes("Set-Cookie: "+cookie+"\r\n");
             }
