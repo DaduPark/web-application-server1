@@ -99,7 +99,11 @@ public class HttpRequest {
     }
     
     private String setMappingUrl(String headerFirstLine) {
-    	return headerFirstLine.split(" ")[1];
+    	String returnStr = "";
+    	if(headerFirstLine.split(" ").length>1) {
+    		returnStr = headerFirstLine.split(" ")[1];
+    	}
+    	return returnStr;
     }
     
     
