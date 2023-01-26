@@ -40,29 +40,11 @@ public class RequestHandler extends Thread {
         	
         	controllerMap.put("/user/create", new CreateUserController());
         	controllerMap.put("/user/list.html", new ListUserController());
+        	controllerMap.put("/user/login", new LoginController());
         	
-        	if(request.getPath().contains("/create")) {
-        		
+        	if(controllerMap.containsKey(request.getPath())) {
         		Controller controller = controllerMap.get(request.getPath());
-        		
         		controller.service(request, response);
-        		
-        		
-        	}else if(request.getPath().endsWith("/user/login")){
-                
-        		User user = DataBase.findUserById(request.getParameter("userId"));
-        		
-        		if(user != null && user.getPassword().equals(request.getParameter("password"))) {
-                    response.addHeader("Set-Cookie", "logined=true");
-                    response.sendRedirect(homeURL);
-        		}else {
-        			 response.forward("/user/login_failed.html");
-        		}
-        	}else if(request.getPath().contains("/user/list")) {
-        		Controller controller = controllerMap.get(request.getPath());
-        		
-        		controller.service(request, response);
-        		
         	}else {
         		response.forward(request.getPath());
         	}
