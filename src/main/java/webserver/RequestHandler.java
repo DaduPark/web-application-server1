@@ -38,7 +38,7 @@ public class RequestHandler extends Thread {
         	
         	Map<String, Controller> controllerMap = new HashMap<String, Controller>	();
         	
-        	controllerMap.put("/create", new CreateUserController());
+        	controllerMap.put("/user/create", new CreateUserController());
         	
         	if(request.getPath().contains("/create")) {
         		
