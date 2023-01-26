@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URLDecoder;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -31,33 +32,34 @@ public class RequestHandler extends Thread {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
-        	HttpRequest httpRequest = new HttpRequest(in);
+        	HttpRequest request = new HttpRequest(in);
         	
         	HttpResponse response = new HttpResponse(out);
         	
-        	if(httpRequest.getPath().contains("/create")) {
+        	Map<String, Controller> controllerMap = new HashMap<String, Controller>	();
+        	
+        	controllerMap.put("/create", new CreateUserController());
+        	
+        	if(request.getPath().contains("/create")) {
         		
-        		User user = new User(httpRequest.getParameter("userId"), 
-        							httpRequest.getParameter("password"), 
-        							URLDecoder.decode(httpRequest.getParameter("name"), "UTF-8"), 
-        							URLDecoder.decode(httpRequest.getParameter("email"), "UTF-8"));
-            	
-        		DataBase.addUser(user);
+        		Controller controller = controllerMap.get(request.getPath());
         		
-                response.sendRedirect(homeURL);
-        	}else if(httpRequest.getPath().endsWith("/user/login")){
+        		controller.service(request, response);
+        		
+        		
+        	}else if(request.getPath().endsWith("/user/login")){
                 
-        		User user = DataBase.findUserById(httpRequest.getParameter("userId"));
+        		User user = DataBase.findUserById(request.getParameter("userId"));
         		
-        		if(user != null && user.getPassword().equals(httpRequest.getParameter("password"))) {
+        		if(user != null && user.getPassword().equals(request.getParameter("password"))) {
                     response.addHeader("Set-Cookie", "logined=true");
                     response.sendRedirect(homeURL);
         		}else {
         			 response.forward("/user/login_failed.html");
         		}
-        	}else if(httpRequest.getPath().contains("/user/list")) {
+        	}else if(request.getPath().contains("/user/list")) {
         		
-        		Map<String, String> cookies = HttpRequestUtils.parseCookies(httpRequest.getHeader("Cookie"));
+        		Map<String, String> cookies = HttpRequestUtils.parseCookies(request.getHeader("Cookie"));
         		
         		if(cookies.get("logined") != null && Boolean.parseBoolean(cookies.get("logined"))==true) {
         			response.forwardUserList();
@@ -65,7 +67,7 @@ public class RequestHandler extends Thread {
         			response.forward("/user/login.html");
         		}
         	}else {
-        		response.forward(httpRequest.getPath());
+        		response.forward(request.getPath());
         	}
         	
         } catch (IOException e) {
