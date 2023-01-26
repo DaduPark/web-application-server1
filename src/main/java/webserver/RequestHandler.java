@@ -39,6 +39,7 @@ public class RequestHandler extends Thread {
         	Map<String, Controller> controllerMap = new HashMap<String, Controller>	();
         	
         	controllerMap.put("/user/create", new CreateUserController());
+        	controllerMap.put("/user/list.html", new ListUserController());
         	
         	if(request.getPath().contains("/create")) {
         		
@@ -58,14 +59,10 @@ public class RequestHandler extends Thread {
         			 response.forward("/user/login_failed.html");
         		}
         	}else if(request.getPath().contains("/user/list")) {
+        		Controller controller = controllerMap.get(request.getPath());
         		
-        		Map<String, String> cookies = HttpRequestUtils.parseCookies(request.getHeader("Cookie"));
+        		controller.service(request, response);
         		
-        		if(cookies.get("logined") != null && Boolean.parseBoolean(cookies.get("logined"))==true) {
-        			response.forwardUserList();
-        		}else {
-        			response.forward("/user/login.html");
-        		}
         	}else {
         		response.forward(request.getPath());
         	}
