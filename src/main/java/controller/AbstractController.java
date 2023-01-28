@@ -4,8 +4,9 @@ import java.io.IOException;
 
 import http.HttpRequest;
 import http.HttpResponse;
-
 abstract class AbstractController implements Controller{
+	
+	@Override
 	public void service(HttpRequest request, HttpResponse response)  throws IOException {
 		if(request.getMethod().isPost()){
 			doPost(request, response);
@@ -13,6 +14,6 @@ abstract class AbstractController implements Controller{
 			doGet(request, response);
 		}
 	};
-	public void doPost(HttpRequest request, HttpResponse response) throws IOException {};
-	public void doGet(HttpRequest request, HttpResponse response)  throws IOException {};
+	protected void doPost(HttpRequest request, HttpResponse response) throws IOException {};
+	protected void doGet(HttpRequest request, HttpResponse response)  throws IOException {};
 }

@@ -39,24 +39,27 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
  
         	HttpRequest request = new HttpRequest(in);
-        	
         	HttpResponse response = new HttpResponse(out);
         	
-        	Map<String, Controller> controllerMap = new HashMap<String, Controller>	();
+        	Controller controller = RequestMapping.getController(request.getPath());
         	
-        	controllerMap.put("/user/create", new CreateUserController());
-        	controllerMap.put("/user/list.html", new ListUserController());
-        	controllerMap.put("/user/login", new LoginController());
-        	
-        	if(controllerMap.containsKey(request.getPath())) {
-        		Controller controller = controllerMap.get(request.getPath());
-        		controller.service(request, response);
+        	if(controller == null) {
+        		String path = getDefaultPath(request.getPath());
+        		response.forward(path);
         	}else {
-        		response.forward(request.getPath());
+        		controller.service(request, response);
         	}
         	
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+        
+    }
+    
+    private String getDefaultPath(String path) {
+        if (path.equals("/")) {
+            return "/index.html";
+        }
+        return path;
     }
 }

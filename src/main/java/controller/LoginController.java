@@ -11,6 +11,7 @@ public class LoginController extends AbstractController{
 
 	public static String homeURL = "/index.html";
 	
+	@Override
 	public void doPost(HttpRequest request, HttpResponse response) throws IOException {
 		User user = DataBase.findUserById(request.getParameter("userId"));
 		
