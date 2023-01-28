@@ -12,8 +12,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import http.HttpRequest;
 import util.HttpRequestUtils.Pair;
-import webserver.HttpRequest;
 
 public class HttpRequestUtilsTest {
     @Test
