@@ -4,7 +4,7 @@ import java.io.IOException;
 
 abstract class AbstractController implements Controller{
 	public void service(HttpRequest request, HttpResponse response)  throws IOException {
-		if("POST".equals(request.getMethod())){
+		if(request.getMethod().isPost()){
 			doPost(request, response);
 		}else {
 			doGet(request, response);

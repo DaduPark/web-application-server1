@@ -15,7 +15,7 @@ import util.IOUtils;
 
 public class HttpRequest {
 	 private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
-	private String method;
+	private HttpMethod method;
 	
 	private String path;
 	
@@ -40,16 +40,16 @@ public class HttpRequest {
         
     	header = setHeaderInfoMap(httpInfo);
     	
-    	if("POST".equals(method)) {
+    	if(method.isPost()) {
     		parameter = setPostParams(br, header.get("Content-Length"));
-    	}else if("GET".equals(method)) {
+    	}else {
     		if(mappingUrl.length>1) {
     			parameter = setGetParams(mappingUrl[1]);
     		}
     	}
 	}
 	
-    public String getMethod() {
+    public HttpMethod getMethod() {
 		return method;
 	}
 
@@ -71,10 +71,13 @@ public class HttpRequest {
     	StringBuffer headerInfo= new StringBuffer();
 		try {
 			String line = br.readLine();
+			log.debug("request line : {}",line);
 			
 			while (!"".equals(line)) {
 				headerInfo.append(line+"\n");
 				line = br.readLine();
+				
+				log.debug("header : {}", line);
 				
 				if(line == null) {
 					break;
@@ -94,8 +97,8 @@ public class HttpRequest {
     	return firstLine;
     }
     
-    private String setHeaderMethod(String headerFirstLine) {
-    	return headerFirstLine.split(" ")[0];
+    private HttpMethod setHeaderMethod(String headerFirstLine) {
+    	return HttpMethod.valueOf(headerFirstLine.split(" ")[0]) ;
     }
     
     private String setMappingUrl(String headerFirstLine) {
