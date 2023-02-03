@@ -1,26 +1,23 @@
 package controller;
 
-import java.io.IOException;
-import java.net.URLDecoder;
-
-import db.DataBase;
 import http.HttpRequest;
 import http.HttpResponse;
 import model.User;
 
-public class CreateUserController extends AbstractController{
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-	public static String homeURL = "/index.html";
-	
-	@Override
-	public void doPost(HttpRequest request, HttpResponse response) throws IOException {
-		User user = new User(request.getParameter("userId"), 
-				request.getParameter("password"), 
-				URLDecoder.decode(request.getParameter("name"), "UTF-8"), 
-				URLDecoder.decode(request.getParameter("email"), "UTF-8"));
+import db.DataBase;
 
-		DataBase.addUser(user);
-		
-		response.sendRedirect(homeURL);
-	};
+public class CreateUserController extends AbstractController {
+    private static final Logger log = LoggerFactory.getLogger(CreateUserController.class);
+
+    @Override
+    public void doPost(HttpRequest request, HttpResponse response) {
+        User user = new User(request.getParameter("userId"), request.getParameter("password"),
+                request.getParameter("name"), request.getParameter("email"));
+        log.debug("user : {}", user);
+        DataBase.addUser(user);
+        response.sendRedirect("/index.html");
+    }
 }
